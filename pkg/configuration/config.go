@@ -36,16 +36,16 @@ type ConfigStruct struct {
 type Config = *ConfigStruct
 
 func Load(location string) (config Config, err error) {
-	file, error := os.Open(location)
-	if error != nil {
-		log.Println("error on config load: ", error)
-		return config, error
+	file, err := os.Open(location)
+	if err != nil {
+		log.Println("error on config load: ", err)
+		return config, err
 	}
 	decoder := json.NewDecoder(file)
-	error = decoder.Decode(&config)
-	if error != nil {
-		log.Println("invalid config json: ", error)
-		return config, error
+	err = decoder.Decode(&config)
+	if err != nil {
+		log.Println("invalid config json: ", err)
+		return config, err
 	}
 	HandleEnvironmentVars(config)
 	return config, nil

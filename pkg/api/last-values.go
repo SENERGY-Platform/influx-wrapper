@@ -24,6 +24,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"
+	"time"
 )
 
 func init() {
@@ -34,6 +35,8 @@ const userHeader = "X-UserID"
 
 func LastValuesEndpoint(router *httprouter.Router, config configuration.Config, influx *influxdb.Influx) {
 	router.POST("/last-values", func(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
+		start := time.Now()
+
 		db := request.Header.Get(userHeader)
 		if db == "" {
 			http.Error(writer, "Missing header "+userHeader, http.StatusBadRequest)
@@ -75,6 +78,10 @@ func LastValuesEndpoint(router *httprouter.Router, config configuration.Config, 
 		err = json.NewEncoder(writer).Encode(responseElements)
 		if err != nil {
 			fmt.Println("ERROR: " + err.Error())
+		}
+
+		if config.Debug {
+			log.Println("Took " + time.Since(start).String())
 		}
 	})
 

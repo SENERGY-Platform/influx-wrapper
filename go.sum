@@ -1,2 +1,4 @@
 github.com/julienschmidt/httprouter v1.3.0 h1:U0609e9tgbseu3rBINet9P48AI/D3oJs4dN7jwJOQ1U=
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
+github.com/orourkedd/influxdb1-client v0.0.0-20190326200226-bd3b72602b58 h1:S9I5Y0M0BIEmTNexrkKy3lbciMp5QUaKbRUjenVj618=
+github.com/orourkedd/influxdb1-client v0.0.0-20190326200226-bd3b72602b58/go.mod h1:asTyKG+9d3Ei6HOeqpxaO81wIwyitdvxuk4e1caZjLw=

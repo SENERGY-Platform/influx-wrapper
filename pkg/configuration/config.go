@@ -28,9 +28,11 @@ import (
 )
 
 type ConfigStruct struct {
-	ApiPort     string `json:"api_port"`
-	InfluxDbUrl string `json:"influx_db_url"`
-	Debug       bool   `json:"debug"`
+	ApiPort      string `json:"api_port"`
+	InfluxDbUrl  string `json:"influx_db_url"`
+	InfluxDbUser string `json:"influx_db_user"`
+	InfluxDbPw   string `json:"influx_db_pw"`
+	Debug        bool   `json:"debug"`
 }
 
 type Config = *ConfigStruct

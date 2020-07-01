@@ -19,8 +19,9 @@ package api
 import (
 	"context"
 	"github.com/SENERGY-Platform/influx-wrapper/pkg/api/util"
-	"github.com/julienschmidt/httprouter"
 	"github.com/SENERGY-Platform/influx-wrapper/pkg/configuration"
+	"github.com/SENERGY-Platform/influx-wrapper/pkg/influx"
+	"github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"
 	"reflect"
@@ -29,12 +30,12 @@ import (
 	"time"
 )
 
-var endpoints = []func(router *httprouter.Router, config configuration.Config){}
+var endpoints = []func(router *httprouter.Router, config configuration.Config, influx *influx.Influx){}
 
 //starts http server; if wg is not nil it will be set as done when the server is stopped
-func Start(ctx context.Context, wg *sync.WaitGroup, config configuration.Config) (err error) {
+func Start(ctx context.Context, wg *sync.WaitGroup, config configuration.Config, influx *influx.Influx) (err error) {
 	log.Println("start api")
-	router := Router(config)
+	router := Router(config, influx)
 	server := &http.Server{Addr: ":" + config.ApiPort, Handler: router, WriteTimeout: 10 * time.Second, ReadTimeout: 2 * time.Second, ReadHeaderTimeout: 2 * time.Second}
 	wg.Add(1)
 	go func() {
@@ -52,11 +53,11 @@ func Start(ctx context.Context, wg *sync.WaitGroup, config configuration.Config)
 	return nil
 }
 
-func Router(config configuration.Config) http.Handler {
+func Router(config configuration.Config, influx *influx.Influx) http.Handler {
 	router := httprouter.New()
 	for _, e := range endpoints {
 		log.Println("add endpoints: " + runtime.FuncForPC(reflect.ValueOf(e).Pointer()).Name())
-		e(router, config)
+		e(router, config, influx)
 	}
 	log.Println("add logging and cors")
 	corsHandler := util.NewCors(router)

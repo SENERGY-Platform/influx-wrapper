@@ -1,5 +1,7 @@
 {
   "api_port": "8080",
-  "influx_url": "http://localhost:8086",
+  "influx_db_url": "http://localhost:8086",
+  "influx_db_user": "",
+  "influx_db_pw": "",
   "debug": true
 }

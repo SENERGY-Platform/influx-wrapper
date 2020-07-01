@@ -20,12 +20,17 @@ import (
 	"context"
 	"github.com/SENERGY-Platform/influx-wrapper/pkg/api"
 	"github.com/SENERGY-Platform/influx-wrapper/pkg/configuration"
+	"github.com/SENERGY-Platform/influx-wrapper/pkg/influx"
 	"sync"
 )
 
 //starts services and goroutines; returns a waiting group which is done as soon as all go routines are stopped
 func Start(ctx context.Context, config configuration.Config) (wg *sync.WaitGroup, err error) {
 	wg = &sync.WaitGroup{}
-	err = api.Start(ctx, wg, config)
+	influxClient, err := influx.NewInflux(config)
+	if err != nil {
+		return wg, err
+	}
+	err = api.Start(ctx, wg, config, influxClient)
 	return
 }

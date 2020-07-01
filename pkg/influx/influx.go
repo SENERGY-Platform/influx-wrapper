@@ -17,7 +17,6 @@
 package influx
 
 import (
-	"errors"
 	"github.com/SENERGY-Platform/influx-wrapper/pkg/configuration"
 	influxLib "github.com/orourkedd/influxdb1-client"
 	"log"
@@ -25,16 +24,6 @@ import (
 	"net/url"
 	"strings"
 )
-
-type Influx struct {
-	config configuration.Config
-	client *influxLib.Client
-}
-
-var ErrNULL = errors.New("NULL response")
-var ErrUnexpectedLength = errors.New("NULL response")
-var ErrInfluxConnection = errors.New("communication with InfluxDB failed")
-var ErrNotFound = errors.New("not found")
 
 func NewInflux(config configuration.Config) (influx *Influx, err error) {
 	influxUrl, err := url.Parse(config.InfluxDbUrl)
@@ -54,7 +43,17 @@ func NewInflux(config configuration.Config) (influx *Influx, err error) {
 }
 
 func (this *Influx) GetLatestValue(db string, pair MeasurementColumnPair) (timeValuePair TimeValuePair, err error) {
-	query := "SELECT time, " + pair.ColumnName + " FROM \"" + pair.Measurement + "\" ORDER BY time desc LIMIT 1"
+	timeValuePairs, err := this.GetLatestValues(db, []MeasurementColumnPair{pair})
+	if err != nil {
+		return timeValuePair, err
+	}
+	return timeValuePairs[0], err
+}
+
+func (this *Influx) GetLatestValues(db string, pairs []MeasurementColumnPair) (timeValuePairs []TimeValuePair, err error) {
+	set := transformMeasurementColumnPairs(pairs)
+
+	query := generateQuery(set) + " ORDER BY \"time\" DESC LIMIT 1"
 	if this.config.Debug {
 		log.Println("Query: " + query)
 	}
@@ -68,12 +67,12 @@ func (this *Influx) GetLatestValue(db string, pair MeasurementColumnPair) (timeV
 		_, isNetError := err.(net.Error)
 		if isNetError {
 			log.Println(err.Error())
-			return timeValuePair, ErrInfluxConnection
+			return timeValuePairs, ErrInfluxConnection
 		}
-		return timeValuePair, err
+		return timeValuePairs, err
 	}
 	if responseP == nil {
-		return timeValuePair, ErrNULL
+		return timeValuePairs, ErrNULL
 	}
 	err = responseP.Error()
 	if err != nil {
@@ -81,19 +80,35 @@ func (this *Influx) GetLatestValue(db string, pair MeasurementColumnPair) (timeV
 			if this.config.Debug {
 				log.Println(err.Error())
 			}
-			return timeValuePair, ErrNotFound
+			return timeValuePairs, ErrNotFound
 		}
-		return timeValuePair, responseP.Error()
+		return timeValuePairs, responseP.Error()
 	}
-	if len(responseP.Results) != 1 ||
-		len(responseP.Results[0].Series) != 1 ||
-		len(responseP.Results[0].Series[0].Values) != 1 ||
-		len(responseP.Results[0].Series[0].Values[0]) != 2 {
-		return timeValuePair, ErrNotFound
+
+	if len(responseP.Results) != 1 || len(responseP.Results[0].Series) != len(set.Measurements) {
+		return timeValuePairs, ErrNotFound
 	}
-	timeValuePair = TimeValuePair{
-		Time:  (responseP.Results[0].Series[0].Values[0][0]).(string),
-		Value: responseP.Results[0].Series[0].Values[0][1],
+
+	for i := range responseP.Results[0].Series {
+		if len(responseP.Results[0].Series[i].Values) != 1 || len(responseP.Results[0].Series[i].Values[0]) != len(set.Columns) {
+			return timeValuePairs, ErrNotFound
+		}
 	}
+
+	for _, pair := range pairs {
+		seriesIndex, err := findSeriesIndex(pair.Measurement, responseP.Results[0].Series)
+		if err != nil {
+			return timeValuePairs, err
+		}
+		columnIndex, err := findColumnIndex(pair.ColumnName, responseP.Results[0].Series[seriesIndex])
+		if err != nil {
+			return timeValuePairs, err
+		}
+		timeValuePairs = append(timeValuePairs, TimeValuePair{
+			Time:  responseP.Results[0].Series[seriesIndex].Values[0][0].(string),
+			Value: responseP.Results[0].Series[seriesIndex].Values[0][columnIndex],
+		})
+	}
+
 	return
 }

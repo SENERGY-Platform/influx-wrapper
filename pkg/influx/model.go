@@ -16,6 +16,17 @@
 
 package influx
 
+import (
+	"errors"
+	"github.com/SENERGY-Platform/influx-wrapper/pkg/configuration"
+	influxLib "github.com/orourkedd/influxdb1-client"
+)
+
+type Influx struct {
+	config configuration.Config
+	client *influxLib.Client
+}
+
 type TimeValuePair struct {
 	Time  string      `json:"time"`
 	Value interface{} `json:"value"`
@@ -25,3 +36,12 @@ type MeasurementColumnPair struct {
 	Measurement string `json:"measurement"`
 	ColumnName  string `json:"columnName"`
 }
+
+type uniqueMeasurementsColumns struct {
+	Measurements map[string]struct{}
+	Columns      map[string]struct{}
+}
+
+var ErrInfluxConnection = errors.New("communication with InfluxDB failed")
+var ErrNotFound = errors.New("not found")
+var ErrNULL = errors.New("NULL response")

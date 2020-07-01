@@ -55,31 +55,20 @@ func LastValuesEndpoint(router *httprouter.Router, config configuration.Config, 
 			}
 		}
 
-		responseElements := []influxdb.TimeValuePair{}
+		responseElements, err := influx.GetLatestValues(db, requestElements)
 
-		for _, requestElement := range requestElements {
-			responseElement, err := influx.GetLatestValue(db, requestElement)
-			if err != nil {
-				switch err {
-				case influxdb.ErrInfluxConnection:
-					http.Error(writer, err.Error(), http.StatusBadGateway)
-					return
-				case influxdb.ErrNotFound:
-					http.Error(writer, err.Error(), http.StatusNotFound)
-					return
-				case influxdb.ErrNULL:
-					http.Error(writer, err.Error(), http.StatusInternalServerError)
-					return
-				case influxdb.ErrUnexpectedLength:
-					http.Error(writer, err.Error(), http.StatusInternalServerError)
-					return
-				default:
-					http.Error(writer, err.Error(), http.StatusInternalServerError)
-					return
-				}
+		if err != nil {
+			switch err {
+			case influxdb.ErrInfluxConnection, influxdb.ErrNULL:
+				http.Error(writer, err.Error(), http.StatusBadGateway)
+				return
+			case influxdb.ErrNotFound:
+				http.Error(writer, err.Error(), http.StatusNotFound)
+				return
+			default:
+				http.Error(writer, err.Error(), http.StatusInternalServerError)
+				return
 			}
-			responseElements = append(responseElements, responseElement)
-
 		}
 
 		writer.Header().Set("Content-Type", "application/json")

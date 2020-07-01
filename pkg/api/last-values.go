@@ -37,11 +37,6 @@ type RequestElement struct {
 	ColumnName  string `json:"columnName"`
 }
 
-type ResponseElement struct {
-	Time  string      `json:"time"`
-	Value interface{} `json:"value"`
-}
-
 func LastValuesEndpoint(router *httprouter.Router, config configuration.Config, influx *influxdb.Influx) {
 	router.POST("/last-values", func(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 		db := request.Header.Get(userHeader)
@@ -65,10 +60,10 @@ func LastValuesEndpoint(router *httprouter.Router, config configuration.Config, 
 			}
 		}
 
-		responseElements := []ResponseElement{}
+		responseElements := []influxdb.TimeValuePair{}
 
 		for _, requestElement := range requestElements {
-			time, value, err := influx.GetLatestValue(db, requestElement.Measurement, requestElement.ColumnName)
+			responseElement, err := influx.GetLatestValue(db, requestElement.Measurement, requestElement.ColumnName)
 			if err != nil {
 				switch err {
 				case influxdb.ErrInfluxConnection:
@@ -88,10 +83,7 @@ func LastValuesEndpoint(router *httprouter.Router, config configuration.Config, 
 					return
 				}
 			}
-			responseElements = append(responseElements, ResponseElement{
-				Time:  time,
-				Value: value,
-			})
+			responseElements = append(responseElements, responseElement)
 
 		}
 

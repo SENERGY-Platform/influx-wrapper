@@ -53,7 +53,7 @@ func NewInflux(config configuration.Config) (influx *Influx, err error) {
 	return &Influx{config: config, client: client}, nil
 }
 
-func (this *Influx) GetLatestValue(db string, measurement string, field string) (time string, value interface{}, err error) {
+func (this *Influx) GetLatestValue(db string, measurement string, field string) (timeValuePair TimeValuePair, err error) {
 	query := "SELECT time, " + field + " FROM \"" + measurement + "\" ORDER BY time desc LIMIT 1"
 	if this.config.Debug {
 		log.Println("Query: " + query)
@@ -68,12 +68,12 @@ func (this *Influx) GetLatestValue(db string, measurement string, field string) 
 		_, isNetError := err.(net.Error)
 		if isNetError {
 			log.Println(err.Error())
-			return time, value, ErrInfluxConnection
+			return timeValuePair, ErrInfluxConnection
 		}
-		return time, value, err
+		return timeValuePair, err
 	}
 	if responseP == nil {
-		return time, value, ErrNULL
+		return timeValuePair, ErrNULL
 	}
 	err = responseP.Error()
 	if err != nil {
@@ -81,17 +81,19 @@ func (this *Influx) GetLatestValue(db string, measurement string, field string) 
 			if this.config.Debug {
 				log.Println(err.Error())
 			}
-			return time, value, ErrNotFound
+			return timeValuePair, ErrNotFound
 		}
-		return time, value, responseP.Error()
+		return timeValuePair, responseP.Error()
 	}
 	if len(responseP.Results) != 1 ||
 		len(responseP.Results[0].Series) != 1 ||
 		len(responseP.Results[0].Series[0].Values) != 1 ||
 		len(responseP.Results[0].Series[0].Values[0]) != 2 {
-		return time, value, ErrNotFound
+		return timeValuePair, ErrNotFound
 	}
-	time = (responseP.Results[0].Series[0].Values[0][0]).(string)
-	value = responseP.Results[0].Series[0].Values[0][1]
+	timeValuePair = TimeValuePair{
+		Time:  (responseP.Results[0].Series[0].Values[0][0]).(string),
+		Value: responseP.Results[0].Series[0].Values[0][1],
+	}
 	return
 }

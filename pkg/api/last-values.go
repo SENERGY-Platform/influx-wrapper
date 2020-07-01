@@ -32,11 +32,6 @@ func init() {
 
 const userHeader = "X-UserID"
 
-type RequestElement struct {
-	Measurement string `json:"measurement"`
-	ColumnName  string `json:"columnName"`
-}
-
 func LastValuesEndpoint(router *httprouter.Router, config configuration.Config, influx *influxdb.Influx) {
 	router.POST("/last-values", func(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 		db := request.Header.Get(userHeader)
@@ -45,7 +40,7 @@ func LastValuesEndpoint(router *httprouter.Router, config configuration.Config, 
 			return
 		}
 
-		var requestElements []RequestElement
+		var requestElements []influxdb.MeasurementColumnPair
 		err := json.NewDecoder(request.Body).Decode(&requestElements)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusBadRequest)
@@ -63,7 +58,7 @@ func LastValuesEndpoint(router *httprouter.Router, config configuration.Config, 
 		responseElements := []influxdb.TimeValuePair{}
 
 		for _, requestElement := range requestElements {
-			responseElement, err := influx.GetLatestValue(db, requestElement.Measurement, requestElement.ColumnName)
+			responseElement, err := influx.GetLatestValue(db, requestElement)
 			if err != nil {
 				switch err {
 				case influxdb.ErrInfluxConnection:

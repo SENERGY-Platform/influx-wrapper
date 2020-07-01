@@ -53,8 +53,8 @@ func NewInflux(config configuration.Config) (influx *Influx, err error) {
 	return &Influx{config: config, client: client}, nil
 }
 
-func (this *Influx) GetLatestValue(db string, measurement string, field string) (timeValuePair TimeValuePair, err error) {
-	query := "SELECT time, " + field + " FROM \"" + measurement + "\" ORDER BY time desc LIMIT 1"
+func (this *Influx) GetLatestValue(db string, pair MeasurementColumnPair) (timeValuePair TimeValuePair, err error) {
+	query := "SELECT time, " + pair.ColumnName + " FROM \"" + pair.Measurement + "\" ORDER BY time desc LIMIT 1"
 	if this.config.Debug {
 		log.Println("Query: " + query)
 	}

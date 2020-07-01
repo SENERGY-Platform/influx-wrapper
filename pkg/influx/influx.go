@@ -19,10 +19,7 @@ package influx
 import (
 	"github.com/SENERGY-Platform/influx-wrapper/pkg/configuration"
 	influxLib "github.com/orourkedd/influxdb1-client"
-	"log"
-	"net"
 	"net/url"
-	"strings"
 )
 
 func NewInflux(config configuration.Config) (influx *Influx, err error) {
@@ -54,35 +51,9 @@ func (this *Influx) GetLatestValues(db string, pairs []MeasurementColumnPair) (t
 	set := transformMeasurementColumnPairs(pairs)
 
 	query := generateQuery(set) + " ORDER BY \"time\" DESC LIMIT 1"
-	if this.config.Debug {
-		log.Println("Query: " + query)
-	}
-
-	responseP, err := this.client.Query(influxLib.Query{
-		Command:         query,
-		Database:        db,
-		RetentionPolicy: "",
-	})
+	responseP, err := this.executeQuery(db, query)
 	if err != nil {
-		_, isNetError := err.(net.Error)
-		if isNetError {
-			log.Println(err.Error())
-			return timeValuePairs, ErrInfluxConnection
-		}
 		return timeValuePairs, err
-	}
-	if responseP == nil {
-		return timeValuePairs, ErrNULL
-	}
-	err = responseP.Error()
-	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			if this.config.Debug {
-				log.Println(err.Error())
-			}
-			return timeValuePairs, ErrNotFound
-		}
-		return timeValuePairs, responseP.Error()
 	}
 
 	if len(responseP.Results) != 1 || len(responseP.Results[0].Series) != len(set.Measurements) {

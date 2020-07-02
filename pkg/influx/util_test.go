@@ -292,6 +292,49 @@ func TestUtil(t *testing.T) {
 			}
 		})
 	})
+	t.Run("findColumnIndex", func(t *testing.T) {
+		series := models.Row{
+			Columns: []string{
+				"c1", "c2",
+			},
+		}
+		t.Run("empty name", func(t *testing.T) {
+			n, err := findColumnIndex("", series)
+			if err != ErrNotFound {
+				t.Fail()
+			}
+			if n != 0 {
+				t.Fail()
+			}
+		})
+		t.Run("empty series", func(t *testing.T) {
+			n, err := findColumnIndex("test", models.Row{})
+			if err != ErrNotFound {
+				t.Fail()
+			}
+			if n != 0 {
+				t.Fail()
+			}
+		})
+		t.Run("not found", func(t *testing.T) {
+			n, err := findColumnIndex("no", series)
+			if err != ErrNotFound {
+				t.Fail()
+			}
+			if n != 0 {
+				t.Fail()
+			}
+		})
+		t.Run("found", func(t *testing.T) {
+			n, err := findColumnIndex("c2", series)
+			if err != nil {
+				t.Fail()
+			}
+			if n != 1 {
+				t.Fail()
+			}
+		})
+	})
 }
 
 type netError struct {

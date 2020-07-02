@@ -149,6 +149,16 @@ func TestUtil(t *testing.T) {
 				t.Fail()
 			}
 		})
+		t.Run("response other found", func(t *testing.T) {
+			testErr := errors.New("unknown error message")
+			influxClientMock.SetQueryResponse(&influxLib.Response{
+				Err: testErr,
+			}, nil)
+			_, err := influxClient.executeQuery("test", "test")
+			if err != testErr {
+				t.Fail()
+			}
+		})
 		t.Run("response normal", func(t *testing.T) {
 			expect := &influxLib.Response{
 				Results: []influxLib.Result{
@@ -292,6 +302,7 @@ func TestUtil(t *testing.T) {
 			}
 		})
 	})
+
 	t.Run("findColumnIndex", func(t *testing.T) {
 		series := models.Row{
 			Columns: []string{

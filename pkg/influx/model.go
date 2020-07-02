@@ -24,7 +24,7 @@ import (
 
 type Influx struct {
 	config configuration.Config
-	client *influxLib.Client
+	client Client
 }
 
 type TimeValuePair struct {
@@ -40,6 +40,10 @@ type MeasurementColumnPair struct {
 type uniqueMeasurementsColumns struct {
 	Measurements map[string]struct{}
 	Columns      map[string]struct{}
+}
+
+type Client interface {
+	Query(query influxLib.Query) (*influxLib.Response, error)
 }
 
 var ErrInfluxConnection = errors.New("communication with InfluxDB failed")

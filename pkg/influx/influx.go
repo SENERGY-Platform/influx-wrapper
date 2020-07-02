@@ -36,7 +36,8 @@ func NewInflux(config configuration.Config) (influx *Influx, err error) {
 	if err != nil {
 		return influx, err
 	}
-	return &Influx{config: config, client: client}, nil
+	influxClient := Client(client)
+	return &Influx{config: config, client: influxClient}, nil
 }
 
 func (this *Influx) GetLatestValue(db string, pair MeasurementColumnPair) (timeValuePair TimeValuePair, err error) {

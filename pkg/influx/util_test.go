@@ -22,6 +22,7 @@ import (
 	"github.com/SENERGY-Platform/influx-wrapper/pkg/tests/services"
 	influxLib "github.com/orourkedd/influxdb1-client"
 	"github.com/orourkedd/influxdb1-client/models"
+	"strings"
 	"testing"
 )
 
@@ -35,11 +36,12 @@ func TestUtil(t *testing.T) {
 		client: &influxClientMock,
 	}
 
-	t.Run("generate query", func(t *testing.T) {
+	t.Run("generateQuery", func(t *testing.T) {
 		t.Run("empty set", func(t *testing.T) {
 			q := generateQuery(uniqueMeasurementsColumns{})
-			if q != "SELECT  FROM " {
-				t.Fail()
+			expect := "SELECT  FROM "
+			if q != expect {
+				t.Error("expect", expect, "actual", q)
 			}
 		})
 		t.Run("empty measurements", func(t *testing.T) {
@@ -49,8 +51,10 @@ func TestUtil(t *testing.T) {
 			q := generateQuery(uniqueMeasurementsColumns{
 				Columns: columns,
 			})
-			if q != "SELECT \"c1\", \"c2\" FROM " {
-				t.Fail()
+			expect := "SELECT \"c1\", \"c2\" FROM "
+			expectAlt := "SELECT \"c2\", \"c1\" FROM "
+			if q != expect && q != expectAlt {
+				t.Error("\nexpect\n", expect, "\nor\n", expectAlt, "\nactual\n", q)
 			}
 		})
 		t.Run("empty columns", func(t *testing.T) {
@@ -60,8 +64,10 @@ func TestUtil(t *testing.T) {
 			q := generateQuery(uniqueMeasurementsColumns{
 				Measurements: measurements,
 			})
-			if q != "SELECT  FROM \"m1\", \"m2\"" {
-				t.Fail()
+			expect := "SELECT  FROM \"m1\", \"m2\""
+			expectAlt := "SELECT  FROM \"m2\", \"m1\""
+			if q != expect && q != expectAlt {
+				t.Error("expect\n", expect, "\nor\n", expectAlt, "\nactual\n", q)
 			}
 		})
 		t.Run("normal set", func(t *testing.T) {
@@ -75,8 +81,22 @@ func TestUtil(t *testing.T) {
 				Columns:      columns,
 				Measurements: measurements,
 			})
-			if q != "SELECT \"c1\", \"c2\" FROM \"m1\", \"m2\"" {
-				t.Fail()
+			validResults := []string{}
+			validResults = append(validResults,
+				"SELECT \"c1\", \"c2\" FROM \"m1\", \"m2\"",
+				"SELECT \"c2\", \"c1\" FROM \"m1\", \"m2\"",
+				"SELECT \"c1\", \"c2\" FROM \"m2\", \"m1\"",
+				"SELECT \"c2\", \"c1\" FROM \"m2\", \"m1\"")
+
+			foundValid := false
+
+			for _, validResult := range validResults {
+				if q == validResult {
+					foundValid = true
+				}
+			}
+			if !foundValid {
+				t.Error("expect any of\n", strings.Join(validResults, "\n"), "\nactual\n", q)
 			}
 		})
 	})

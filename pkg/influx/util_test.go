@@ -184,7 +184,7 @@ func TestUtil(t *testing.T) {
 
 	t.Run("transformMeasurementColumnPairs", func(t *testing.T) {
 		t.Run("empty pairs", func(t *testing.T) {
-			actual := transformMeasurementColumnPairs([]MeasurementColumnPair{})
+			actual := transformMeasurementColumnPairs([]RequestElement{})
 
 			columns := make(map[string]struct{})
 			columns["time"] = struct{}{}
@@ -195,7 +195,7 @@ func TestUtil(t *testing.T) {
 			}
 		})
 		t.Run("invalid pair", func(t *testing.T) {
-			actual := transformMeasurementColumnPairs([]MeasurementColumnPair{
+			actual := transformMeasurementColumnPairs([]RequestElement{
 				{Measurement: ""},
 			})
 
@@ -211,7 +211,7 @@ func TestUtil(t *testing.T) {
 			}
 		})
 		t.Run("single pair", func(t *testing.T) {
-			actual := transformMeasurementColumnPairs([]MeasurementColumnPair{
+			actual := transformMeasurementColumnPairs([]RequestElement{
 				{
 					Measurement: "m1",
 					ColumnName:  "c1",
@@ -230,7 +230,7 @@ func TestUtil(t *testing.T) {
 			}
 		})
 		t.Run("multiple pairs", func(t *testing.T) {
-			actual := transformMeasurementColumnPairs([]MeasurementColumnPair{
+			actual := transformMeasurementColumnPairs([]RequestElement{
 				{
 					Measurement: "m1",
 					ColumnName:  "c1",

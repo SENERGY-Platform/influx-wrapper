@@ -40,15 +40,15 @@ func NewInflux(config configuration.Config) (influx *Influx, err error) {
 	return &Influx{config: config, client: influxClient}, nil
 }
 
-func (this *Influx) GetLatestValue(db string, pair MeasurementColumnPair) (timeValuePair TimeValuePair, err error) {
-	timeValuePairs, err := this.GetLatestValues(db, []MeasurementColumnPair{pair})
+func (this *Influx) GetLatestValue(db string, pair RequestElement) (timeValuePair TimeValuePair, err error) {
+	timeValuePairs, err := this.GetLatestValues(db, []RequestElement{pair})
 	if err != nil {
 		return timeValuePair, err
 	}
 	return timeValuePairs[0], err
 }
 
-func (this *Influx) GetLatestValues(db string, pairs []MeasurementColumnPair) (timeValuePairs []TimeValuePair, err error) {
+func (this *Influx) GetLatestValues(db string, pairs []RequestElement) (timeValuePairs []TimeValuePair, err error) {
 	set := transformMeasurementColumnPairs(pairs)
 
 	query := generateQuery(set) + " ORDER BY \"time\" DESC LIMIT 1"

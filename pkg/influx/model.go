@@ -32,7 +32,7 @@ type TimeValuePair struct {
 	Value interface{} `json:"value"`
 }
 
-type MeasurementColumnPair struct {
+type RequestElement struct {
 	Measurement string `json:"measurement"`
 	ColumnName  string `json:"columnName"`
 }

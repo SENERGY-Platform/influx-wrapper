@@ -77,7 +77,7 @@ func (this *Influx) executeQuery(db string, query string) (responseP *influxLib.
 	return
 }
 
-func transformMeasurementColumnPairs(pairs []MeasurementColumnPair) (unique uniqueMeasurementsColumns) {
+func transformMeasurementColumnPairs(pairs []RequestElement) (unique uniqueMeasurementsColumns) {
 	unique = uniqueMeasurementsColumns{
 		Columns:      make(map[string]struct{}),
 		Measurements: make(map[string]struct{}),

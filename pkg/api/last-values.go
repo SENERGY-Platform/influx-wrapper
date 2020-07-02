@@ -43,7 +43,7 @@ func LastValuesEndpoint(router *httprouter.Router, config configuration.Config, 
 			return
 		}
 
-		var requestElements []influxdb.MeasurementColumnPair
+		var requestElements []influxdb.RequestElement
 		err := json.NewDecoder(request.Body).Decode(&requestElements)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusBadRequest)

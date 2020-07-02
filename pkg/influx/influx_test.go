@@ -83,7 +83,7 @@ func TestInflux(t *testing.T) {
 					},
 				},
 			}, nil)
-			measurementColumnPair := MeasurementColumnPair{
+			measurementColumnPair := RequestElement{
 				Measurement: "m1",
 				ColumnName:  "c1",
 			}
@@ -159,7 +159,7 @@ func TestInflux(t *testing.T) {
 					},
 				},
 			}, nil)
-			measurementColumnPairs := []MeasurementColumnPair{
+			measurementColumnPairs := []RequestElement{
 				{
 					Measurement: "m1",
 					ColumnName:  "c1",

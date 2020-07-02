@@ -56,27 +56,45 @@ func (this *Influx) GetLatestValues(db string, pairs []MeasurementColumnPair) (t
 		return timeValuePairs, err
 	}
 
-	if len(responseP.Results) != 1 || len(responseP.Results[0].Series) != len(set.Measurements) {
-		return timeValuePairs, ErrNotFound
+	if len(responseP.Results) != 1 {
+		return timeValuePairs, ErrNULL
 	}
 
 	for i := range responseP.Results[0].Series {
 		if len(responseP.Results[0].Series[i].Values) != 1 || len(responseP.Results[0].Series[i].Values[0]) != len(set.Columns) {
-			return timeValuePairs, ErrNotFound
+			return timeValuePairs, ErrNULL
 		}
 	}
 
 	for _, pair := range pairs {
 		seriesIndex, err := findSeriesIndex(pair.Measurement, responseP.Results[0].Series)
 		if err != nil {
+			if err == ErrNotFound {
+				timeValuePairs = append(timeValuePairs, TimeValuePair{
+					Time:  nil,
+					Value: nil,
+				})
+				continue
+			}
 			return timeValuePairs, err
 		}
+
 		columnIndex, err := findColumnIndex(pair.ColumnName, responseP.Results[0].Series[seriesIndex])
 		if err != nil {
+			if err == ErrNotFound {
+				time := responseP.Results[0].Series[seriesIndex].Values[0][0].(string)
+				timeValuePairs = append(timeValuePairs, TimeValuePair{
+					Time:  &time,
+					Value: nil,
+				})
+				continue
+			}
 			return timeValuePairs, err
 		}
+
+		time := responseP.Results[0].Series[seriesIndex].Values[0][0].(string)
 		timeValuePairs = append(timeValuePairs, TimeValuePair{
-			Time:  responseP.Results[0].Series[seriesIndex].Values[0][0].(string),
+			Time:  &time,
 			Value: responseP.Results[0].Series[seriesIndex].Values[0][columnIndex],
 		})
 	}

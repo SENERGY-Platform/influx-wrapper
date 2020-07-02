@@ -28,7 +28,7 @@ type Influx struct {
 }
 
 type TimeValuePair struct {
-	Time  string      `json:"time"`
+	Time  *string     `json:"time"`
 	Value interface{} `json:"value"`
 }
 

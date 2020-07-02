@@ -35,6 +35,52 @@ func TestUtil(t *testing.T) {
 		client: &influxClientMock,
 	}
 
+	t.Run("generate query", func(t *testing.T) {
+		t.Run("empty set", func(t *testing.T) {
+			q := generateQuery(uniqueMeasurementsColumns{})
+			if q != "SELECT  FROM " {
+				t.Fail()
+			}
+		})
+		t.Run("empty measurements", func(t *testing.T) {
+			columns := make(map[string]struct{})
+			columns["c1"] = struct{}{}
+			columns["c2"] = struct{}{}
+			q := generateQuery(uniqueMeasurementsColumns{
+				Columns: columns,
+			})
+			if q != "SELECT \"c1\", \"c2\" FROM " {
+				t.Fail()
+			}
+		})
+		t.Run("empty columns", func(t *testing.T) {
+			measurements := make(map[string]struct{})
+			measurements["m1"] = struct{}{}
+			measurements["m2"] = struct{}{}
+			q := generateQuery(uniqueMeasurementsColumns{
+				Measurements: measurements,
+			})
+			if q != "SELECT  FROM \"m1\", \"m2\"" {
+				t.Fail()
+			}
+		})
+		t.Run("normal set", func(t *testing.T) {
+			columns := make(map[string]struct{})
+			columns["c1"] = struct{}{}
+			columns["c2"] = struct{}{}
+			measurements := make(map[string]struct{})
+			measurements["m1"] = struct{}{}
+			measurements["m2"] = struct{}{}
+			q := generateQuery(uniqueMeasurementsColumns{
+				Columns:      columns,
+				Measurements: measurements,
+			})
+			if q != "SELECT \"c1\", \"c2\" FROM \"m1\", \"m2\"" {
+				t.Fail()
+			}
+		})
+	})
+
 	t.Run("executeQuery", func(t *testing.T) {
 		t.Run("net error", func(t *testing.T) {
 			influxClientMock.SetQueryResponse(nil, netError{

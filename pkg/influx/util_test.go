@@ -171,6 +171,80 @@ func TestUtil(t *testing.T) {
 			}
 		})
 	})
+
+	t.Run("transformMeasurementColumnPairs", func(t *testing.T) {
+		t.Run("empty pairs", func(t *testing.T) {
+			actual := transformMeasurementColumnPairs([]MeasurementColumnPair{})
+
+			columns := make(map[string]struct{})
+			columns["time"] = struct{}{}
+			expect := uniqueMeasurementsColumns{Columns: columns}
+
+			if !uniqueMeasurementsColumnsEquals(actual, expect) {
+				t.Fail()
+			}
+		})
+		t.Run("invalid pair", func(t *testing.T) {
+			actual := transformMeasurementColumnPairs([]MeasurementColumnPair{
+				{Measurement: ""},
+			})
+
+			columns := make(map[string]struct{})
+			columns["time"] = struct{}{}
+			columns[""] = struct{}{}
+			measurements := make(map[string]struct{})
+			measurements[""] = struct{}{}
+			expect := uniqueMeasurementsColumns{Columns: columns, Measurements: measurements}
+
+			if !uniqueMeasurementsColumnsEquals(actual, expect) {
+				t.Fail()
+			}
+		})
+		t.Run("single pair", func(t *testing.T) {
+			actual := transformMeasurementColumnPairs([]MeasurementColumnPair{
+				{
+					Measurement: "m1",
+					ColumnName:  "c1",
+				},
+			})
+
+			columns := make(map[string]struct{})
+			columns["time"] = struct{}{}
+			columns["c1"] = struct{}{}
+			measurements := make(map[string]struct{})
+			measurements["m1"] = struct{}{}
+			expect := uniqueMeasurementsColumns{Columns: columns, Measurements: measurements}
+
+			if !uniqueMeasurementsColumnsEquals(actual, expect) {
+				t.Fail()
+			}
+		})
+		t.Run("multiple pairs", func(t *testing.T) {
+			actual := transformMeasurementColumnPairs([]MeasurementColumnPair{
+				{
+					Measurement: "m1",
+					ColumnName:  "c1",
+				},
+				{
+					Measurement: "m2",
+					ColumnName:  "c2",
+				},
+			})
+
+			columns := make(map[string]struct{})
+			columns["time"] = struct{}{}
+			columns["c1"] = struct{}{}
+			columns["c2"] = struct{}{}
+			measurements := make(map[string]struct{})
+			measurements["m1"] = struct{}{}
+			measurements["m2"] = struct{}{}
+			expect := uniqueMeasurementsColumns{Columns: columns, Measurements: measurements}
+
+			if !uniqueMeasurementsColumnsEquals(actual, expect) {
+				t.Fail()
+			}
+		})
+	})
 }
 
 type netError struct {
@@ -185,5 +259,25 @@ func (n netError) Timeout() bool {
 	return true
 }
 func (n netError) Temporary() bool {
+	return true
+}
+
+func uniqueMeasurementsColumnsEquals(u1 uniqueMeasurementsColumns, u2 uniqueMeasurementsColumns) bool {
+	return mapStringStructEquals(u1.Columns, u2.Columns) && mapStringStructEquals(u1.Measurements, u2.Measurements)
+}
+
+func mapStringStructEquals(m1 map[string]struct{}, m2 map[string]struct{}) bool {
+	for key := range m1 {
+		_, ok := m2[key]
+		if !ok {
+			return false
+		}
+	}
+	for key := range m2 {
+		_, ok := m1[key]
+		if !ok {
+			return false
+		}
+	}
 	return true
 }

@@ -44,6 +44,20 @@ func TestUtil(t *testing.T) {
 				t.Error("expect", expect, "actual", q)
 			}
 		})
+		t.Run("empty strings", func(t *testing.T) {
+			measurements := make(map[string]struct{})
+			measurements[""] = struct{}{}
+			columns := make(map[string]struct{})
+			columns[""] = struct{}{}
+			q := generateQuery(uniqueMeasurementsColumns{
+				Measurements: measurements,
+				Columns:      columns,
+			})
+			expect := "SELECT  FROM "
+			if q != expect {
+				t.Error("expect", expect, "actual", q)
+			}
+		})
 		t.Run("empty measurements", func(t *testing.T) {
 			columns := make(map[string]struct{})
 			columns["c1"] = struct{}{}

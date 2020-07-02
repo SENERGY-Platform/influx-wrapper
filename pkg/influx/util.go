@@ -28,10 +28,14 @@ func generateQuery(set uniqueMeasurementsColumns) (query string) {
 	columns := []string{}
 	measurements := []string{}
 	for measurement := range set.Measurements {
-		measurements = append(measurements, "\""+measurement+"\"")
+		if measurement != "" {
+			measurements = append(measurements, "\""+measurement+"\"")
+		}
 	}
 	for column := range set.Columns {
-		columns = append(columns, "\""+column+"\"")
+		if column != "" {
+			columns = append(columns, "\""+column+"\"")
+		}
 	}
 
 	query += "SELECT " + strings.Join(columns, ", ") + " FROM " + strings.Join(measurements, ", ")

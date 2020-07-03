@@ -17,71 +17,8 @@
 package influx
 
 import (
-	influxLib "github.com/orourkedd/influxdb1-client"
 	"github.com/orourkedd/influxdb1-client/models"
-	"log"
-	"net"
-	"strings"
 )
-
-func generateQuery(set uniqueMeasurementsColumns) (query string) {
-	columns := []string{}
-	measurements := []string{}
-	for measurement := range set.Measurements {
-		if measurement != "" {
-			measurements = append(measurements, "\""+measurement+"\"")
-		}
-	}
-	for columnName, mathOperations := range set.Columns {
-		if columnName != "" {
-			for mathOperation := range mathOperations {
-				part := "\"" + columnName + "\""
-				if mathOperation != "" {
-					part += mathOperation + " AS \"" + columnName + mathOperation + "\""
-				}
-				columns = append(columns, part)
-			}
-		}
-	}
-
-	query += "SELECT " + strings.Join(columns, ", ") + " FROM " + strings.Join(measurements, ", ")
-	return query
-}
-
-func (this *Influx) executeQuery(db string, query string) (responseP *influxLib.Response, err error) {
-	if this.config.Debug {
-		log.Println("Query: " + query)
-	}
-
-	responseP, err = this.client.Query(influxLib.Query{
-		Command:         query,
-		Database:        db,
-		RetentionPolicy: "",
-	})
-	if err != nil {
-		_, isNetError := err.(net.Error)
-		if isNetError {
-			log.Println(err.Error())
-			return responseP, ErrInfluxConnection
-		}
-		return responseP, err
-	}
-	if responseP == nil {
-		return responseP, ErrNULL
-	}
-	err = responseP.Error()
-	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			if this.config.Debug {
-				log.Println(err.Error())
-			}
-			return responseP, ErrNotFound
-		}
-		return responseP, err
-	}
-
-	return
-}
 
 func transformMeasurementColumnPairs(pairs []RequestElement) (unique uniqueMeasurementsColumns) {
 	unique = uniqueMeasurementsColumns{

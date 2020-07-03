@@ -47,8 +47,9 @@ func TestUtil(t *testing.T) {
 		t.Run("empty strings", func(t *testing.T) {
 			measurements := make(map[string]struct{})
 			measurements[""] = struct{}{}
-			columns := make(map[string]struct{})
-			columns[""] = struct{}{}
+			columns := make(map[string]map[string]struct{})
+			columns[""] = make(map[string]struct{})
+			columns[""][""] = struct{}{}
 			q := generateQuery(uniqueMeasurementsColumns{
 				Measurements: measurements,
 				Columns:      columns,
@@ -59,9 +60,11 @@ func TestUtil(t *testing.T) {
 			}
 		})
 		t.Run("empty measurements", func(t *testing.T) {
-			columns := make(map[string]struct{})
-			columns["c1"] = struct{}{}
-			columns["c2"] = struct{}{}
+			columns := make(map[string]map[string]struct{})
+			columns["c1"] = make(map[string]struct{})
+			columns["c1"][""] = struct{}{}
+			columns["c2"] = make(map[string]struct{})
+			columns["c2"][""] = struct{}{}
 			q := generateQuery(uniqueMeasurementsColumns{
 				Columns: columns,
 			})
@@ -85,9 +88,11 @@ func TestUtil(t *testing.T) {
 			}
 		})
 		t.Run("normal set", func(t *testing.T) {
-			columns := make(map[string]struct{})
-			columns["c1"] = struct{}{}
-			columns["c2"] = struct{}{}
+			columns := make(map[string]map[string]struct{})
+			columns["c1"] = make(map[string]struct{})
+			columns["c1"][""] = struct{}{}
+			columns["c2"] = make(map[string]struct{})
+			columns["c2"][""] = struct{}{}
 			measurements := make(map[string]struct{})
 			measurements["m1"] = struct{}{}
 			measurements["m2"] = struct{}{}
@@ -101,6 +106,37 @@ func TestUtil(t *testing.T) {
 				"SELECT \"c2\", \"c1\" FROM \"m1\", \"m2\"",
 				"SELECT \"c1\", \"c2\" FROM \"m2\", \"m1\"",
 				"SELECT \"c2\", \"c1\" FROM \"m2\", \"m1\"")
+
+			foundValid := false
+
+			for _, validResult := range validResults {
+				if q == validResult {
+					foundValid = true
+				}
+			}
+			if !foundValid {
+				t.Error("expect any of\n", strings.Join(validResults, "\n"), "\nactual\n", q)
+			}
+		})
+		t.Run("normal set with math", func(t *testing.T) {
+			columns := make(map[string]map[string]struct{})
+			columns["c1"] = make(map[string]struct{})
+			columns["c1"]["+3"] = struct{}{}
+			columns["c2"] = make(map[string]struct{})
+			columns["c2"]["-5"] = struct{}{}
+			measurements := make(map[string]struct{})
+			measurements["m1"] = struct{}{}
+			measurements["m2"] = struct{}{}
+			q := generateQuery(uniqueMeasurementsColumns{
+				Columns:      columns,
+				Measurements: measurements,
+			})
+			validResults := []string{}
+			validResults = append(validResults,
+				"SELECT \"c1\"+3 AS \"c1+3\", \"c2\"-5 AS \"c2-5\" FROM \"m1\", \"m2\"",
+				"SELECT \"c2\"-5 AS \"c2-5\", \"c1\"+3 AS \"c1+3\" FROM \"m1\", \"m2\"",
+				"SELECT \"c1\"+3 AS \"c1+3\", \"c2\"-5 AS \"c2-5\" FROM \"m2\", \"m1\"",
+				"SELECT \"c2\"-5 AS \"c2-5\", \"c1\"+3 AS \"c1+3\" FROM \"m2\", \"m1\"")
 
 			foundValid := false
 
@@ -186,8 +222,9 @@ func TestUtil(t *testing.T) {
 		t.Run("empty pairs", func(t *testing.T) {
 			actual := transformMeasurementColumnPairs([]RequestElement{})
 
-			columns := make(map[string]struct{})
-			columns["time"] = struct{}{}
+			columns := make(map[string]map[string]struct{})
+			columns["time"] = make(map[string]struct{})
+			columns["time"][""] = struct{}{}
 			expect := uniqueMeasurementsColumns{Columns: columns}
 
 			if !uniqueMeasurementsColumnsEquals(actual, expect) {
@@ -199,9 +236,11 @@ func TestUtil(t *testing.T) {
 				{Measurement: ""},
 			})
 
-			columns := make(map[string]struct{})
-			columns["time"] = struct{}{}
-			columns[""] = struct{}{}
+			columns := make(map[string]map[string]struct{})
+			columns["time"] = make(map[string]struct{})
+			columns["time"][""] = struct{}{}
+			columns[""] = make(map[string]struct{})
+			columns[""][""] = struct{}{}
 			measurements := make(map[string]struct{})
 			measurements[""] = struct{}{}
 			expect := uniqueMeasurementsColumns{Columns: columns, Measurements: measurements}
@@ -218,9 +257,34 @@ func TestUtil(t *testing.T) {
 				},
 			})
 
-			columns := make(map[string]struct{})
-			columns["time"] = struct{}{}
-			columns["c1"] = struct{}{}
+			columns := make(map[string]map[string]struct{})
+			columns["c1"] = make(map[string]struct{})
+			columns["c1"][""] = struct{}{}
+			columns["time"] = make(map[string]struct{})
+			columns["time"][""] = struct{}{}
+			measurements := make(map[string]struct{})
+			measurements["m1"] = struct{}{}
+			expect := uniqueMeasurementsColumns{Columns: columns, Measurements: measurements}
+
+			if !uniqueMeasurementsColumnsEquals(actual, expect) {
+				t.Fail()
+			}
+		})
+		t.Run("single pair with math", func(t *testing.T) {
+			math := "+3"
+			actual := transformMeasurementColumnPairs([]RequestElement{
+				{
+					Measurement: "m1",
+					ColumnName:  "c1",
+					Math:        &math,
+				},
+			})
+
+			columns := make(map[string]map[string]struct{})
+			columns["c1"] = make(map[string]struct{})
+			columns["c1"][math] = struct{}{}
+			columns["time"] = make(map[string]struct{})
+			columns["time"][""] = struct{}{}
 			measurements := make(map[string]struct{})
 			measurements["m1"] = struct{}{}
 			expect := uniqueMeasurementsColumns{Columns: columns, Measurements: measurements}
@@ -241,10 +305,50 @@ func TestUtil(t *testing.T) {
 				},
 			})
 
-			columns := make(map[string]struct{})
-			columns["time"] = struct{}{}
-			columns["c1"] = struct{}{}
-			columns["c2"] = struct{}{}
+			columns := make(map[string]map[string]struct{})
+			columns["time"] = make(map[string]struct{})
+			columns["time"][""] = struct{}{}
+			columns["c1"] = make(map[string]struct{})
+			columns["c1"][""] = struct{}{}
+			columns["c2"] = make(map[string]struct{})
+			columns["c2"][""] = struct{}{}
+			measurements := make(map[string]struct{})
+			measurements["m1"] = struct{}{}
+			measurements["m2"] = struct{}{}
+			expect := uniqueMeasurementsColumns{Columns: columns, Measurements: measurements}
+
+			if !uniqueMeasurementsColumnsEquals(actual, expect) {
+				t.Fail()
+			}
+		})
+		t.Run("multiple pairs with math", func(t *testing.T) {
+			math1 := "-25"
+			math2 := "-13"
+			actual := transformMeasurementColumnPairs([]RequestElement{
+				{
+					Measurement: "m1",
+					ColumnName:  "c1",
+					Math:        &math1,
+				},
+				{
+					Measurement: "m2",
+					ColumnName:  "c2",
+					Math:        &math2,
+				},
+				{
+					Measurement: "m2",
+					ColumnName:  "c2",
+				},
+			})
+
+			columns := make(map[string]map[string]struct{})
+			columns["time"] = make(map[string]struct{})
+			columns["time"][""] = struct{}{}
+			columns["c1"] = make(map[string]struct{})
+			columns["c1"][math1] = struct{}{}
+			columns["c2"] = make(map[string]struct{})
+			columns["c2"][""] = struct{}{}
+			columns["c2"][math2] = struct{}{}
 			measurements := make(map[string]struct{})
 			measurements["m1"] = struct{}{}
 			measurements["m2"] = struct{}{}
@@ -364,18 +468,30 @@ func (n netError) Temporary() bool {
 }
 
 func uniqueMeasurementsColumnsEquals(u1 uniqueMeasurementsColumns, u2 uniqueMeasurementsColumns) bool {
-	return mapStringStructEquals(u1.Columns, u2.Columns) && mapStringStructEquals(u1.Measurements, u2.Measurements)
-}
-
-func mapStringStructEquals(m1 map[string]struct{}, m2 map[string]struct{}) bool {
-	for key := range m1 {
-		_, ok := m2[key]
+	if !mapStringStructEquals(u1.Measurements, u2.Measurements) {
+		return false
+	}
+	if len(u1.Columns) != len(u2.Columns) {
+		return false
+	}
+	for column := range u1.Columns {
+		u2Column, ok := u2.Columns[column]
 		if !ok {
 			return false
 		}
+		if !mapStringStructEquals(u1.Columns[column], u2Column) {
+			return false
+		}
 	}
-	for key := range m2 {
-		_, ok := m1[key]
+	return true
+}
+
+func mapStringStructEquals(m1 map[string]struct{}, m2 map[string]struct{}) bool {
+	if len(m1) != len(m2) {
+		return false
+	}
+	for key := range m1 {
+		_, ok := m2[key]
 		if !ok {
 			return false
 		}

@@ -33,13 +33,15 @@ type TimeValuePair struct {
 }
 
 type RequestElement struct {
-	Measurement string `json:"measurement"`
-	ColumnName  string `json:"columnName"`
+	Measurement string  `json:"measurement"`
+	ColumnName  string  `json:"columnName"`
+	Math        *string `json:"math"`
 }
 
 type uniqueMeasurementsColumns struct {
-	Measurements map[string]struct{}
-	Columns      map[string]struct{}
+	Measurements map[string]struct{}            //Keys of the map are all requested measurements
+	Columns      map[string]map[string]struct{} //Keys of the outer map are all requested columns.
+	// Keys of the inner maps are all requested math operations. Empty string is no math operation
 }
 
 type Client interface {

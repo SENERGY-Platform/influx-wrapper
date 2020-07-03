@@ -61,8 +61,13 @@ func (this *Influx) GetLatestValues(db string, pairs []RequestElement) (timeValu
 		return timeValuePairs, ErrNULL
 	}
 
+	numExpectedColumns := 0
+	for key := range set.Columns {
+		numExpectedColumns += len(set.Columns[key])
+	}
+
 	for i := range responseP.Results[0].Series {
-		if len(responseP.Results[0].Series[i].Values) != 1 || len(responseP.Results[0].Series[i].Values[0]) != len(set.Columns) {
+		if len(responseP.Results[0].Series[i].Values) != 1 || len(responseP.Results[0].Series[i].Values[0]) != numExpectedColumns {
 			return timeValuePairs, ErrNULL
 		}
 	}
@@ -79,8 +84,7 @@ func (this *Influx) GetLatestValues(db string, pairs []RequestElement) (timeValu
 			}
 			return timeValuePairs, err
 		}
-
-		columnIndex, err := findColumnIndex(pair.ColumnName, responseP.Results[0].Series[seriesIndex])
+		columnIndex, err := findColumnIndex(getColumnName(pair), responseP.Results[0].Series[seriesIndex])
 		if err != nil {
 			if err == ErrNotFound {
 				time := responseP.Results[0].Series[seriesIndex].Values[0][0].(string)

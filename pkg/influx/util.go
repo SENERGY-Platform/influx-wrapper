@@ -32,9 +32,15 @@ func generateQuery(set uniqueMeasurementsColumns) (query string) {
 			measurements = append(measurements, "\""+measurement+"\"")
 		}
 	}
-	for column := range set.Columns {
-		if column != "" {
-			columns = append(columns, "\""+column+"\"")
+	for columnName, mathOperations := range set.Columns {
+		if columnName != "" {
+			for mathOperation := range mathOperations {
+				part := "\"" + columnName + "\""
+				if mathOperation != "" {
+					part += mathOperation + " AS \"" + columnName + mathOperation + "\""
+				}
+				columns = append(columns, part)
+			}
 		}
 	}
 
@@ -79,14 +85,24 @@ func (this *Influx) executeQuery(db string, query string) (responseP *influxLib.
 
 func transformMeasurementColumnPairs(pairs []RequestElement) (unique uniqueMeasurementsColumns) {
 	unique = uniqueMeasurementsColumns{
-		Columns:      make(map[string]struct{}),
+		Columns:      make(map[string]map[string]struct{}),
 		Measurements: make(map[string]struct{}),
 	}
+	unique.Columns["time"] = make(map[string]struct{})
+	unique.Columns["time"][""] = struct{}{}
+
 	for _, pair := range pairs {
-		unique.Columns[pair.ColumnName] = struct{}{}
+		_, columnKnown := unique.Columns[pair.ColumnName]
+		if !columnKnown {
+			unique.Columns[pair.ColumnName] = make(map[string]struct{})
+		}
+		if pair.Math != nil && *pair.Math != "" {
+			unique.Columns[pair.ColumnName][*pair.Math] = struct{}{}
+		} else {
+			unique.Columns[pair.ColumnName][""] = struct{}{}
+		}
 		unique.Measurements[pair.Measurement] = struct{}{}
 	}
-	unique.Columns["time"] = struct{}{}
 	return unique
 }
 
@@ -106,4 +122,12 @@ func findColumnIndex(name string, series models.Row) (index int, err error) {
 		}
 	}
 	return 0, ErrNotFound
+}
+
+func getColumnName(e RequestElement) (columnName string) {
+	columnName = e.ColumnName
+	if e.Math != nil {
+		columnName += *e.Math
+	}
+	return columnName
 }

@@ -189,6 +189,54 @@ func TestInflux(t *testing.T) {
 					t.Fail()
 				}
 			})
+			t.Run("with math", func(t *testing.T) {
+				influxClientMock.SetQueryResponse(&influxLib.Response{
+					Results: []influxLib.Result{
+						{
+							Series: []models.Row{
+								{
+									Name:    "m1",
+									Columns: []string{"time", "c1+5", "c1-5"},
+									Values: [][]interface{}{
+										{t1, v1 + 5, v1 - 5},
+									},
+								},
+							},
+						},
+					},
+				}, nil)
+				expected := []TimeValuePair{
+					{
+						Time:  &t1,
+						Value: v1 + 5,
+					},
+					{
+						Time:  &t1,
+						Value: v1 - 5,
+					},
+				}
+				math1 := "+5"
+				math2 := "-5"
+				actual, err := influxClient.GetLatestValues(db, []RequestElement{
+					{
+						Measurement: "m1",
+						ColumnName:  "c1",
+						Math:        &math1,
+					},
+					{
+						Measurement: "m1",
+						ColumnName:  "c1",
+						Math:        &math2,
+					},
+				})
+				if err != nil {
+					t.Fail()
+					return
+				}
+				if !timeValuePairListEquals(expected, actual) {
+					t.Fail()
+				}
+			})
 			t.Run("series missing", func(t *testing.T) {
 				influxClientMock.SetQueryResponse(&influxLib.Response{
 					Results: []influxLib.Result{

@@ -1,0 +1,126 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "definitions": {
+    "LastValueRequest": {
+      "items": {
+        "$ref": "#/definitions/LastValueRequestElement"
+      },
+      "type": "array"
+    },
+    "LastValueRequestElement": {
+      "properties": {
+        "measurement": {
+          "description": "ID of requested measurement",
+          "type": "string"
+        },
+        "columnName": {
+          "description": "Name of the requested column",
+          "type": "string"
+        },
+        "math": {
+          "description": "Optional basic math operation like '+5'",
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [
+        "measurement",
+        "columnName"
+      ]
+    },
+    "LastValueResponse": {
+      "items": {
+        "$ref": "#/definitions/TimeValuePair"
+      },
+      "type": "array"
+    },
+    "TimeValuePair": {
+      "properties": {
+        "time": {
+          "description": "timestamp of reading",
+          "type": "string"
+        },
+        "value": {
+          "description": "value at this timestamp",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "info": {
+    "title": "influx-wrapper",
+    "version": "0.1"
+  },
+  "paths": {
+    "/doc": {
+      "get": {
+        "operationId": "get_docs",
+        "responses": {
+          "200": {
+            "description": "Success"
+          }
+        },
+        "tags": [
+          "default"
+        ]
+      }
+    },
+    "/last-values": {
+      "post": {
+        "operationId": "post_queries",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "payload",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/LastValueRequest"
+            }
+          },
+          {
+            "description": "An optional fields mask",
+            "format": "mask",
+            "in": "header",
+            "name": "X-Fields",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/LastValueResponse"
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "502": {
+            "description": "Bad Gateway"
+          }
+        }
+      }
+    }
+  },
+  "produces": [
+    "application/json"
+  ],
+  "responses": {
+    "MaskError": {
+      "description": "When any error occurs on mask"
+    },
+    "ParseError": {
+      "description": "When a mask can't be parsed"
+    }
+  },
+  "swagger": "2.0",
+  "tags": [
+    {
+      "description": "Default namespace",
+      "name": "default"
+    }
+  ]
+}

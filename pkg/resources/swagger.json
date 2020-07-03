@@ -1,4 +1,5 @@
 {
+  "basePath": "",
   "consumes": [
     "application/json"
   ],

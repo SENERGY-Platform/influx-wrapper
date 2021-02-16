@@ -49,6 +49,16 @@
         }
       },
       "type": "object"
+    },
+    "TagResponse": {
+      "properties": {
+        "tagKey": {
+          "description": "tag column name and all values",
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      },
+      "type": "object"
     }
   },
   "info": {
@@ -103,6 +113,31 @@
             "description": "Bad Gateway"
           }
         }
+      }
+    },
+    "/tags/{measurementId}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "measurementId",
+            "in": "path",
+            "description": "ID of measurement you want to collect tags from",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "operationId": "get_tags",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/TagResponse"
+            }
+          }
+        },
+        "tags": [
+          "default"
+        ]
       }
     }
   },

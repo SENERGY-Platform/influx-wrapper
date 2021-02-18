@@ -57,13 +57,13 @@ func GenerateQueries(elements []QueriesRequestElement) (query string, err error)
 					query += " AND "
 				}
 				_, valueIsString := filter.Value.(string)
-				query += "'" + filter.Column + "' "
+				query += "\"" + filter.Column + "\" "
 				if filter.Math != nil {
 					query += *filter.Math + " "
 				}
 				query += filter.Type
 				if valueIsString {
-					query += " \"" + filter.Value.(string) + "\""
+					query += " '" + filter.Value.(string) + "'"
 				} else {
 					value, err := util.String(filter.Value)
 					if err != nil {

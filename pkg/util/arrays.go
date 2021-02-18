@@ -25,7 +25,7 @@ func ElementInArray(element interface{}, array []interface{}) bool {
 	return false
 }
 
-/**
+/*
 Removes an element form an array. If the array was ordered before, it will loose that order.
 */
 func RemoveElementFrom2D(array [][]interface{}, index int) [][]interface{} {

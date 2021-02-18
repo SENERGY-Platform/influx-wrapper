@@ -28,7 +28,6 @@ import (
 	"log"
 	"net/http"
 	"sort"
-	"strconv"
 	"time"
 )
 
@@ -134,7 +133,6 @@ func formatResponsePerQuery(results []influxLib.Result) (formatted [][][]interfa
 }
 
 func formatResponseAsTable(request []influxdb.QueriesRequestElement, results []influxLib.Result) (formatted [][]interface{}, err error) {
-	start := time.Now()
 	data, err := formatResponsePerQuery(results)
 	if err != nil {
 		return nil, err
@@ -147,13 +145,20 @@ func formatResponseAsTable(request []influxdb.QueriesRequestElement, results []i
 		totalColumns += len(element.Columns)
 	}
 
+	// transform all time strings to time.Time
 	for seriesIndex := range data {
 		for rowIndex := range data[seriesIndex] {
-			formattedRow := make([]interface{}, totalColumns)
-			formattedRow[0], err = time.Parse(time.RFC3339, data[seriesIndex][rowIndex][0].(string))
+			data[seriesIndex][rowIndex][0], err = time.Parse(time.RFC3339, data[seriesIndex][rowIndex][0].(string))
 			if err != nil {
 				return nil, err
 			}
+		}
+	}
+
+	for seriesIndex := range data {
+		for rowIndex := range data[seriesIndex] {
+			formattedRow := make([]interface{}, totalColumns)
+			formattedRow[0] = data[seriesIndex][rowIndex][0]
 			for seriesColumnIndex := range request[seriesIndex].Columns {
 				formattedRow[baseIndex[seriesIndex]+seriesColumnIndex] = data[seriesIndex][rowIndex][seriesColumnIndex+1]
 			}
@@ -161,12 +166,17 @@ func formatResponseAsTable(request []influxdb.QueriesRequestElement, results []i
 				if subSeriesIndex <= seriesIndex {
 					continue
 				}
-				for subRowIndex := range data[subSeriesIndex] {
+				subRowIndex, ok := findFirstElementIndex(data[subSeriesIndex], data[seriesIndex][rowIndex][0].(time.Time), 0, len(data[subSeriesIndex])-1)
+				if ok {
 					if data[subSeriesIndex][subRowIndex][0] == data[seriesIndex][rowIndex][0] {
 						for subSeriesColumnIndex := range request[subSeriesIndex].Columns {
 							formattedRow[baseIndex[subSeriesIndex]+subSeriesColumnIndex] = data[subSeriesIndex][subRowIndex][subSeriesColumnIndex+1]
 						}
 						data[subSeriesIndex] = util.RemoveElementFrom2D(data[subSeriesIndex], subRowIndex)
+						// sorting required for binary search
+						sort.Slice(data[subSeriesIndex], func(i, j int) bool {
+							return data[subSeriesIndex][i][0].(time.Time).After(data[subSeriesIndex][j][0].(time.Time))
+						})
 						break
 					}
 				}
@@ -177,9 +187,23 @@ func formatResponseAsTable(request []influxdb.QueriesRequestElement, results []i
 	sort.Slice(formatted, func(i, j int) bool {
 		return formatted[i][0].(time.Time).After(formatted[j][0].(time.Time))
 	})
-	end := time.Since(start)
-	values := len(formatted) * len(data)
-	log.Println("Reformat took " + end.String() + ", " + strconv.Itoa(len(formatted)) + " rows, " +
-		strconv.Itoa(values) + " values, " + strconv.FormatInt(end.Nanoseconds()/int64(values+1), 10) + " nanos/value")
 	return
+}
+
+func findFirstElementIndex(array [][]interface{}, t time.Time, left int, right int) (int, bool) {
+	if left > right {
+		return 0, false
+	}
+	mid := left + (right-left)/2
+	if t.Equal(array[mid][0].(time.Time)) {
+		for t.Equal(array[mid][0].(time.Time)) && mid > 0 {
+			mid--
+		}
+		return mid, true
+	}
+
+	if array[mid][0].(time.Time).Before(t) {
+		return findFirstElementIndex(array, t, left, mid-1)
+	}
+	return findFirstElementIndex(array, t, mid+1, right)
 }

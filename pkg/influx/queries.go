@@ -47,7 +47,7 @@ func GenerateQueries(elements []QueriesRequestElement) (query string, err error)
 			}
 		}
 
-		query += " FROM \"" + element.Measurement + "\" "
+		query += " FROM \"" + element.Measurement + "\""
 		if element.Filters != nil || element.Time != nil {
 			query += " WHERE "
 		}
@@ -61,34 +61,35 @@ func GenerateQueries(elements []QueriesRequestElement) (query string, err error)
 				if filter.Math != nil {
 					query += *filter.Math + " "
 				}
-				query += filter.Type + " "
+				query += filter.Type
 				if valueIsString {
-					query += "\"" + filter.Value.(string) + "\" "
+					query += " \"" + filter.Value.(string) + "\""
 				} else {
 					value, err := util.String(filter.Value)
 					if err != nil {
 						return "", err
 					}
-					query += value + " "
+					query += " " + value
 				}
 			}
 		}
 		if element.Time != nil {
 			if element.Filters != nil {
-				query += "AND "
+				query += " AND "
 			}
 			if element.Time.Last != nil {
-				query += "time > now() - " + *element.Time.Last + " "
+				query += " time > now() - " + *element.Time.Last
 			} else {
-				query += "time > '" + *element.Time.Start + "' AND time < '" + *element.Time.End + "' "
+				query += " time > '" + *element.Time.Start + "' AND time < '" + *element.Time.End + "'"
 			}
 		}
 		if element.GroupTime != nil {
-			query += "GROUP BY time(" + *element.GroupTime + ") "
+			query += " GROUP BY time(" + *element.GroupTime + ")"
+		} else {
+			query += " ORDER BY time DESC"
 		}
-		query += "ORDER BY time DESC "
 		if element.Limit != nil {
-			query += "LIMIT " + strconv.Itoa(*element.Limit)
+			query += " LIMIT " + strconv.Itoa(*element.Limit)
 		}
 	}
 	return

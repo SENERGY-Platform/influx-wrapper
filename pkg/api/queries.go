@@ -153,6 +153,9 @@ func formatResponseAsTable(request []influxdb.QueriesRequestElement, results []i
 				return nil, err
 			}
 		}
+		sort.Slice(data[seriesIndex], func(i, j int) bool {
+			return data[seriesIndex][i][0].(time.Time).After(data[seriesIndex][j][0].(time.Time))
+		})
 	}
 
 	for seriesIndex := range data {

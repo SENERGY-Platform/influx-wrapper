@@ -38,7 +38,7 @@ func (element *QueriesRequestElement) Valid() bool {
 	if element.Time != nil && !element.Time.Valid() {
 		return false
 	}
-	if element.Limit != nil && *element.Limit < 1 {
+	if element.Limit != nil && (*element.Limit < 1 || element.GroupTime != nil) {
 		return false
 	}
 	if len(element.Columns) == 0 {

@@ -52,7 +52,7 @@ func (this *Influx) GetLatestValues(db string, pairs []RequestElement) (timeValu
 	set := transformMeasurementColumnPairs(pairs)
 
 	query := generateQuery(set) + " ORDER BY \"time\" DESC LIMIT 1"
-	responseP, err := this.executeQuery(db, query)
+	responseP, err := this.ExecuteQuery(db, query)
 	if err != nil {
 		return timeValuePairs, err
 	}

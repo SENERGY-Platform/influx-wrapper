@@ -47,7 +47,7 @@ func generateQuery(set uniqueMeasurementsColumns) (query string) {
 	return query
 }
 
-func (this *Influx) executeQuery(db string, query string) (responseP *influxLib.Response, err error) {
+func (this *Influx) ExecuteQuery(db string, query string) (responseP *influxLib.Response, err error) {
 	if this.config.Debug {
 		log.Println("Query: " + query)
 	}

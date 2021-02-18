@@ -19,7 +19,7 @@ package influx
 import "errors"
 
 func (this *Influx) GetTags(db string, measurement string) (tagMap map[string][]string, err error) {
-	response, err := this.executeQuery(db, "SHOW TAG VALUES FROM \""+measurement+"\" WITH KEY =~ /.*/ ")
+	response, err := this.ExecuteQuery(db, "SHOW TAG VALUES FROM \""+measurement+"\" WITH KEY =~ /.*/ ")
 	if err != nil {
 		return nil, err
 	}

@@ -55,9 +55,110 @@
         "tagKey": {
           "description": "tag column name and all values",
           "type": "array",
-          "items": {"type": "string"}
+          "items": {
+            "type": "string"
+          }
         }
       },
+      "type": "object"
+    },
+    "QueriesRequestElementFilter": {
+      "properties": {
+        "column": {
+          "description": "column name",
+          "type": "string"
+        },
+        "math": {
+          "description": "basic math operation. Format (\\+|-|\\*|/)\\d+((\\.|,)\\d+)?",
+          "type": "string"
+        },
+        "type": {
+          "description": "filter type. One of \"=\", \"<>\", \"!=\", \">\", \">=\", \"<\", \"<=\"",
+          "type": "string"
+        },
+        "value": {
+          "description": "value to filter for"
+        }
+      },
+      "type": "object",
+      "required": [
+        "column",
+        "type",
+        "value"
+      ]
+    },
+    "QueriesRequestElementColumn": {
+      "properties": {
+        "name": {
+          "description": "column name",
+          "type": "string"
+        },
+        "math": {
+          "description": "basic math operation. Format (\\+|-|\\*|/)\\d+((\\.|,)\\d+)?",
+          "type": "string"
+        },
+        "groupType": {
+          "description": "group type. One of \"mean\", \"sum\", \"count\", \"median\", \"min\", \"max\", \"first\", \"last\", \"difference-first\", \"difference-last\", \"difference-min\", \"difference-max\", \"difference-count\", \"difference-mean\", \"difference-sum\", \"difference-median\"",
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [
+        "name"
+      ]
+    },
+    "QueriesRequestElementTime": {
+      "properties": {
+        "last": {
+          "description": "time interval. Format \\d+(ns|u|µ|ms|s|m|h|d|w)",
+          "type": "string"
+        },
+        "start": {
+          "description": "start time. Format rfc3339",
+          "type": "string"
+        },
+        "end": {
+          "description": "end time. Format rfc3339",
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "description": "use either last or stand and end"
+    },
+    "QueriesRequestElement": {
+      "properties": {
+        "measurement": {
+          "description": "id of requested measurement",
+          "type": "string"
+        },
+        "time": {
+          "$ref": "#/definitions/QueriesRequestElementTime"
+        },
+        "limit": {
+          "description": "maximum number of values returned",
+          "type": "integer"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/QueriesRequestElementTime"
+          }
+        },
+        "filters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/QueriesRequestElementTime"
+          }
+        },
+        "groupTime": {
+          "type": "string",
+          "description": "Format \\d+(ns|u|µ|ms|s|m|h|d|w)"
+        }
+      },
+      "required": [
+        "measurement",
+        "columns"
+      ],
       "type": "object"
     }
   },
@@ -81,7 +182,7 @@
     },
     "/last-values": {
       "post": {
-        "operationId": "post_queries",
+        "operationId": "post_last_values",
         "parameters": [
           {
             "in": "body",
@@ -135,6 +236,37 @@
             }
           }
         },
+        "tags": [
+          "default"
+        ]
+      }
+    },
+    "/queries": {
+      "post": {
+        "parameters": [
+          {
+            "name": "payload",
+            "in": "body",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/QueriesRequestElement"
+              }
+            },
+            "required": true
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "2D or 3D array"
+          }
+        },
+        "operationId": "post_queries",
         "tags": [
           "default"
         ]

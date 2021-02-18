@@ -54,10 +54,10 @@ func GenerateQueries(elements []QueriesRequestElement) (query string, err error)
 		if element.Filters != nil {
 			for idx, filter := range *element.Filters {
 				if idx != 0 {
-					query += "AND "
+					query += " AND "
 				}
 				_, valueIsString := filter.Value.(string)
-				query += "\"" + filter.Column + "\" "
+				query += "'" + filter.Column + "' "
 				if filter.Math != nil {
 					query += *filter.Math + " "
 				}

@@ -158,7 +158,7 @@ func formatResponseAsTable(request []influxdb.QueriesRequestElement, results []i
 				formattedRow[baseIndex[seriesIndex]+seriesColumnIndex] = data[seriesIndex][rowIndex][seriesColumnIndex+1]
 			}
 			for subSeriesIndex := range data {
-				if subSeriesIndex == seriesIndex {
+				if subSeriesIndex <= seriesIndex {
 					continue
 				}
 				for subRowIndex := range data[subSeriesIndex] {

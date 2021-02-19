@@ -180,7 +180,7 @@ func formatResponseAsTable(request []influxdb.QueriesRequestElement, results []i
 						sort.Slice(data[subSeriesIndex], func(i, j int) bool {
 							return data[subSeriesIndex][i][0].(time.Time).After(data[subSeriesIndex][j][0].(time.Time))
 						})
-						break
+						continue
 					}
 				}
 			}

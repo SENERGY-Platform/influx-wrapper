@@ -141,13 +141,13 @@
         "columns": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/QueriesRequestElementTime"
+            "$ref": "#/definitions/QueriesRequestElementColumn"
           }
         },
         "filters": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/QueriesRequestElementTime"
+            "$ref": "#/definitions/QueriesRequestElementFilter"
           }
         },
         "groupTime": {

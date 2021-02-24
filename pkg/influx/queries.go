@@ -17,12 +17,13 @@
 package influx
 
 import (
+	"github.com/SENERGY-Platform/influx-wrapper/pkg/api/model"
 	"github.com/SENERGY-Platform/influx-wrapper/pkg/util"
 	"strconv"
 	"strings"
 )
 
-func GenerateQueries(elements []QueriesRequestElement) (query string, err error) {
+func GenerateQueries(elements []model.QueriesRequestElement) (query string, err error) {
 	for _, element := range elements {
 		if len(query) > 0 {
 			query += "; "

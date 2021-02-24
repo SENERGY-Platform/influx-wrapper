@@ -20,22 +20,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/SENERGY-Platform/influx-wrapper/pkg/api/model"
 	"github.com/SENERGY-Platform/influx-wrapper/pkg/configuration"
 	influxdb "github.com/SENERGY-Platform/influx-wrapper/pkg/influx"
-	"github.com/SENERGY-Platform/influx-wrapper/pkg/util"
 	"github.com/julienschmidt/httprouter"
 	influxLib "github.com/orourkedd/influxdb1-client"
 	"log"
 	"net/http"
 	"sort"
+	"strconv"
 	"time"
-)
-
-type format string
-
-const (
-	perQuery format = "per_query"
-	table    format = "table"
 )
 
 func init() {
@@ -45,22 +39,41 @@ func init() {
 func QueriesEndpoint(router *httprouter.Router, config configuration.Config, influx *influxdb.Influx) {
 	router.POST("/queries", func(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
 		start := time.Now()
-		requestedFormat := format(request.URL.Query().Get("format"))
+		requestedFormat := model.Format(request.URL.Query().Get("format"))
 		db := request.Header.Get(userHeader)
 		if db == "" {
 			http.Error(writer, "Missing header "+userHeader, http.StatusBadRequest)
 			return
 		}
 
-		var requestElements []influxdb.QueriesRequestElement
+		var requestElements []model.QueriesRequestElement
 		err := json.NewDecoder(request.Body).Decode(&requestElements)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		for _, requestElement := range requestElements {
-			if !requestElement.Valid() {
+		paramOrderColumnIndex := request.URL.Query().Get("order_column_index")
+		var orderColumnIndex int
+		if paramOrderColumnIndex == "" {
+			orderColumnIndex = 0
+		} else {
+			orderColumnIndex, err = strconv.Atoi(paramOrderColumnIndex)
+			if err != nil {
+				http.Error(writer, "Invalid param order_column_index", http.StatusBadRequest)
+				return
+			}
+		}
+		orderDirection := model.Direction(request.URL.Query().Get("order_direction"))
+		if orderDirection == "" {
+			orderDirection = model.Desc
+		} else if orderDirection != "asc" && orderDirection != "desc" {
+			http.Error(writer, "Invalid param orderDirection", http.StatusBadRequest)
+			return
+		}
+
+		for i := range requestElements {
+			if !requestElements[i].Valid(requestedFormat) {
 				http.Error(writer, "Invalid request body", http.StatusBadRequest)
 				return
 			}
@@ -86,7 +99,7 @@ func QueriesEndpoint(router *httprouter.Router, config configuration.Config, inf
 			}
 		}
 
-		response, err := formatResponse(requestedFormat, requestElements, data.Results)
+		response, err := formatResponse(requestedFormat, requestElements, data.Results, orderColumnIndex, orderDirection)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
@@ -105,19 +118,21 @@ func QueriesEndpoint(router *httprouter.Router, config configuration.Config, inf
 
 }
 
-func formatResponse(f format, request []influxdb.QueriesRequestElement, results []influxLib.Result) (data interface{}, err error) {
+func formatResponse(f model.Format, request []model.QueriesRequestElement, results []influxLib.Result,
+	orderColumnIndex int, orderDirection model.Direction) (data interface{}, err error) {
+
 	switch f {
-	case perQuery:
-		return formatResponsePerQuery(results)
-	case table:
-		return formatResponseAsTable(request, results)
+	case model.PerQuery:
+		return formatResponsePerQuery(request, results)
+	case model.Table:
+		return formatResponseAsTable(request, results, orderColumnIndex, orderDirection)
 	default:
-		return formatResponsePerQuery(results)
+		return formatResponsePerQuery(request, results)
 	}
 }
 
-func formatResponsePerQuery(results []influxLib.Result) (formatted [][][]interface{}, err error) {
-	for _, result := range results {
+func formatResponsePerQuery(request []model.QueriesRequestElement, results []influxLib.Result) (formatted [][][]interface{}, err error) {
+	for index, result := range results {
 		if result.Series == nil {
 			// add empty column
 			formatted = append(formatted, [][]interface{}{})
@@ -127,13 +142,23 @@ func formatResponsePerQuery(results []influxLib.Result) (formatted [][][]interfa
 			return nil, errors.New("unexpected number of series")
 		}
 		// add data
+		for rowIndex := range result.Series[0].Values {
+			result.Series[0].Values[rowIndex][0], err = time.Parse(time.RFC3339, result.Series[0].Values[rowIndex][0].(string))
+			if err != nil {
+				return nil, err
+			}
+		}
+		err = model.Sort2D(result.Series[0].Values, *request[index].OrderColumnIndex, *request[index].OrderDirection)
+		if err != nil {
+			return nil, err
+		}
 		formatted = append(formatted, result.Series[0].Values)
 	}
 	return
 }
 
-func formatResponseAsTable(request []influxdb.QueriesRequestElement, results []influxLib.Result) (formatted [][]interface{}, err error) {
-	data, err := formatResponsePerQuery(results)
+func formatResponseAsTable(request []model.QueriesRequestElement, results []influxLib.Result, orderColumnIndex int, orderDirection model.Direction) (formatted [][]interface{}, err error) {
+	data, err := formatResponsePerQuery(request, results)
 	if err != nil {
 		return nil, err
 	}
@@ -143,19 +168,6 @@ func formatResponseAsTable(request []influxdb.QueriesRequestElement, results []i
 	for requestIndex, element := range request {
 		baseIndex[requestIndex] = totalColumns
 		totalColumns += len(element.Columns)
-	}
-
-	// transform all time strings to time.Time
-	for seriesIndex := range data {
-		for rowIndex := range data[seriesIndex] {
-			data[seriesIndex][rowIndex][0], err = time.Parse(time.RFC3339, data[seriesIndex][rowIndex][0].(string))
-			if err != nil {
-				return nil, err
-			}
-		}
-		sort.Slice(data[seriesIndex], func(i, j int) bool {
-			return data[seriesIndex][i][0].(time.Time).After(data[seriesIndex][j][0].(time.Time))
-		})
 	}
 
 	for seriesIndex := range data {
@@ -175,7 +187,7 @@ func formatResponseAsTable(request []influxdb.QueriesRequestElement, results []i
 						for subSeriesColumnIndex := range request[subSeriesIndex].Columns {
 							formattedRow[baseIndex[subSeriesIndex]+subSeriesColumnIndex] = data[subSeriesIndex][subRowIndex][subSeriesColumnIndex+1]
 						}
-						data[subSeriesIndex] = util.RemoveElementFrom2D(data[subSeriesIndex], subRowIndex)
+						data[subSeriesIndex] = model.RemoveElementFrom2D(data[subSeriesIndex], subRowIndex)
 						// sorting required for binary search
 						sort.Slice(data[subSeriesIndex], func(i, j int) bool {
 							return data[subSeriesIndex][i][0].(time.Time).After(data[subSeriesIndex][j][0].(time.Time))
@@ -187,9 +199,10 @@ func formatResponseAsTable(request []influxdb.QueriesRequestElement, results []i
 			formatted = append(formatted, formattedRow)
 		}
 	}
-	sort.Slice(formatted, func(i, j int) bool {
-		return formatted[i][0].(time.Time).After(formatted[j][0].(time.Time))
-	})
+	err = model.Sort2D(formatted, orderColumnIndex, orderDirection)
+	if err != nil {
+		return formatted, err
+	}
 	return
 }
 

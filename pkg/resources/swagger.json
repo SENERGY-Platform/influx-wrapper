@@ -153,6 +153,14 @@
         "groupTime": {
           "type": "string",
           "description": "Format \\d+(ns|u|µ|ms|s|m|h|d|w)"
+        },
+        "orderColumnIndex": {
+          "description": "Column to order values by (includes time column). Only works in format per_query. Note that ordering does not affect the data retrieved since influx only allows ordering by time.",
+          "type": "integer"
+        },
+        "orderDirection": {
+          "description": "Direction to order values by. Allowed are 'asc' and 'desc'. Only works in format per_query. Note that ordering does not affect the data retrieved since influx only allows ordering by time.",
+          "type": "string"
         }
       },
       "required": [
@@ -258,7 +266,20 @@
           {
             "name": "format",
             "in": "query",
-            "type": "string"
+            "type": "string",
+            "description": "specifies output format. Use per_query (default) for a 3D array or table for a 2D array with merged timestamps"
+          },
+          {
+            "name": "order_column_index",
+            "in": "query",
+            "type": "integer",
+            "description": "Column to order values by (includes time column). Only works in format table. Note that ordering does not affect the data retrieved since influx only allows ordering by time."
+          },
+          {
+            "name": "order_direction",
+            "in": "query",
+            "type": "string",
+            "description": "Direction to order values by. Allowed are 'asc' and 'desc'. Only works in format table. Note that ordering does not affect the data retrieved since influx only allows ordering by time."
           }
         ],
         "responses": {

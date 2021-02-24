@@ -14,24 +14,25 @@
  *    limitations under the License.
  */
 
-package influx
+package model
 
 import (
-	"github.com/SENERGY-Platform/influx-wrapper/pkg/util"
 	"regexp"
 	"time"
 )
 
 type QueriesRequestElement struct {
-	Measurement string
-	Time        *QueriesRequestElementTime
-	Limit       *int
-	Columns     []QueriesRequestElementColumn
-	Filters     *[]QueriesRequestElementFilter
-	GroupTime   *string
+	Measurement      string
+	Time             *QueriesRequestElementTime
+	Limit            *int
+	Columns          []QueriesRequestElementColumn
+	Filters          *[]QueriesRequestElementFilter
+	GroupTime        *string
+	OrderColumnIndex *int
+	OrderDirection   *Direction
 }
 
-func (element *QueriesRequestElement) Valid() bool {
+func (element *QueriesRequestElement) Valid(format Format) bool {
 	if len(element.Measurement) == 0 {
 		return false
 	}
@@ -58,6 +59,23 @@ func (element *QueriesRequestElement) Valid() bool {
 	}
 	if element.GroupTime != nil && !timeIntervalValid(*element.GroupTime) {
 		return false
+	}
+	if (element.OrderColumnIndex != nil || element.OrderDirection != nil) && format != PerQuery {
+		return false
+	}
+	if element.OrderDirection != nil && *element.OrderDirection != Asc && *element.OrderDirection != Desc {
+		return false
+	}
+	if element.OrderColumnIndex != nil && (*element.OrderColumnIndex < 1 || *element.OrderColumnIndex > len(element.Columns)) {
+		return false
+	}
+	if element.OrderColumnIndex == nil {
+		zero := 0
+		element.OrderColumnIndex = &zero
+	}
+	if element.OrderDirection == nil {
+		desc := Desc
+		element.OrderDirection = &desc
 	}
 	return true
 }
@@ -110,7 +128,7 @@ func (elementColumn *QueriesRequestElementColumn) Valid(hasTime bool) bool {
 		allowedTypes = append(allowedTypes, "mean", "sum", "count", "median", "min", "max", "first", "last",
 			"difference-first", "difference-last", "difference-min", "difference-max", "difference-count", "difference-mean",
 			"difference-sum", "difference-median")
-		if !util.ElementInArray(*elementColumn.GroupType, allowedTypes) {
+		if !ElementInArray(*elementColumn.GroupType, allowedTypes) {
 			return false
 		}
 	}
@@ -133,7 +151,7 @@ func (filter *QueriesRequestElementFilter) Valid() bool {
 	}
 	allowedTypes := []interface{}{}
 	allowedTypes = append(allowedTypes, "=", "<>", "!=", ">", ">=", "<", "<=")
-	return util.ElementInArray(filter.Type, allowedTypes) && len(filter.Column) > 0 && filter.Value != nil
+	return ElementInArray(filter.Type, allowedTypes) && len(filter.Column) > 0 && filter.Value != nil
 }
 
 func mathValid(math string) bool {
@@ -145,3 +163,17 @@ func timeIntervalValid(timeInterval string) bool {
 	timeMatcher := regexp.MustCompile("\\d+(ns|u|µ|ms|s|m|h|d|w)")
 	return len(timeMatcher.FindString(timeInterval)) == len(timeInterval)
 }
+
+type Format string
+
+const (
+	PerQuery Format = "per_query"
+	Table    Format = "table"
+)
+
+type Direction string
+
+const (
+	Asc  Direction = "asc"
+	Desc Direction = "desc"
+)

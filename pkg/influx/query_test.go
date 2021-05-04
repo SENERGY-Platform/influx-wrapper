@@ -140,7 +140,7 @@ func TestQuery(t *testing.T) {
 			influxClientMock.SetQueryResponse(nil, netError{
 				error: errors.New("net error"),
 			})
-			_, err := influxClient.executeQuery("test", "test")
+			_, err := influxClient.ExecuteQuery("test", "test")
 			if err != ErrInfluxConnection {
 				t.Fail()
 			}
@@ -148,14 +148,14 @@ func TestQuery(t *testing.T) {
 		t.Run("other err", func(t *testing.T) {
 			testErr := errors.New("other err")
 			influxClientMock.SetQueryResponse(nil, testErr)
-			_, err := influxClient.executeQuery("test", "test")
+			_, err := influxClient.ExecuteQuery("test", "test")
 			if err != testErr {
 				t.Fail()
 			}
 		})
 		t.Run("response nil", func(t *testing.T) {
 			influxClientMock.SetQueryResponse(nil, nil)
-			_, err := influxClient.executeQuery("test", "test")
+			_, err := influxClient.ExecuteQuery("test", "test")
 			if err != ErrNULL {
 				t.Fail()
 			}
@@ -164,7 +164,7 @@ func TestQuery(t *testing.T) {
 			influxClientMock.SetQueryResponse(&influxLib.Response{
 				Err: errors.New("DB test not found"),
 			}, nil)
-			_, err := influxClient.executeQuery("test", "test")
+			_, err := influxClient.ExecuteQuery("test", "test")
 			if err != ErrNotFound {
 				t.Fail()
 			}
@@ -174,7 +174,7 @@ func TestQuery(t *testing.T) {
 			influxClientMock.SetQueryResponse(&influxLib.Response{
 				Err: testErr,
 			}, nil)
-			_, err := influxClient.executeQuery("test", "test")
+			_, err := influxClient.ExecuteQuery("test", "test")
 			if err != testErr {
 				t.Fail()
 			}
@@ -192,7 +192,7 @@ func TestQuery(t *testing.T) {
 				},
 			}
 			influxClientMock.SetQueryResponse(expect, nil)
-			actual, err := influxClient.executeQuery("test", "test")
+			actual, err := influxClient.ExecuteQuery("test", "test")
 			if err != nil {
 				t.Fail()
 			}

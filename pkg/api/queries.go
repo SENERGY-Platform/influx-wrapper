@@ -78,7 +78,11 @@ func QueriesEndpoint(router *httprouter.Router, config configuration.Config, inf
 				return
 			}
 		}
-		query, err := influxdb.GenerateQueries(requestElements)
+		timeDirection := model.Desc
+		if orderColumnIndex == 0 {
+			timeDirection = orderDirection
+		}
+		query, err := influxdb.GenerateQueries(requestElements, timeDirection)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return

@@ -23,7 +23,7 @@ import (
 	"strings"
 )
 
-func GenerateQueries(elements []model.QueriesRequestElement) (query string, err error) {
+func GenerateQueries(elements []model.QueriesRequestElement, timeDirection model.Direction) (query string, err error) {
 	for _, element := range elements {
 		if len(query) > 0 {
 			query += "; "
@@ -87,7 +87,7 @@ func GenerateQueries(elements []model.QueriesRequestElement) (query string, err 
 		if element.GroupTime != nil {
 			query += " GROUP BY time(" + *element.GroupTime + ")"
 		} else {
-			query += " ORDER BY time DESC"
+			query += " ORDER BY time " + strings.ToUpper(string(timeDirection))
 		}
 		if element.Limit != nil {
 			query += " LIMIT " + strconv.Itoa(*element.Limit)

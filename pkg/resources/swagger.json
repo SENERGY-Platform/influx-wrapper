@@ -280,6 +280,12 @@
             "in": "query",
             "type": "string",
             "description": "Direction to order values by. Allowed are 'asc' and 'desc'. Only works in format table. Note that ordering does not affect the data retrieved since influx only allows ordering by time."
+          },
+          {
+            "name": "time_format",
+            "in": "query",
+            "type": "string",
+            "description": "Textual representation of the date 'Mon Jan 2 15:04:05 -0700 MST 2006'. Example: 2006-01-02T15:04:05.000Z07:00 would format timestamps as rfc339 with ms precision. Find details here: https://golang.org/pkg/time/#Time.Format"
           }
         ],
         "responses": {

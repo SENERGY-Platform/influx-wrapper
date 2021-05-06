@@ -103,7 +103,8 @@ func QueriesEndpoint(router *httprouter.Router, config configuration.Config, inf
 			}
 		}
 
-		response, err := formatResponse(requestedFormat, requestElements, data.Results, orderColumnIndex, orderDirection)
+		timeFormat := request.URL.Query().Get("time_format")
+		response, err := formatResponse(requestedFormat, requestElements, data.Results, orderColumnIndex, orderDirection, timeFormat)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
@@ -123,15 +124,29 @@ func QueriesEndpoint(router *httprouter.Router, config configuration.Config, inf
 }
 
 func formatResponse(f model.Format, request []model.QueriesRequestElement, results []influxLib.Result,
-	orderColumnIndex int, orderDirection model.Direction) (data interface{}, err error) {
+	orderColumnIndex int, orderDirection model.Direction, timeFormat string) (data interface{}, err error) {
 
 	switch f {
-	case model.PerQuery:
-		return formatResponsePerQuery(request, results)
 	case model.Table:
-		return formatResponseAsTable(request, results, orderColumnIndex, orderDirection)
+		formatted, err := formatResponseAsTable(request, results, orderColumnIndex, orderDirection)
+		if err != nil {
+			return nil, err
+		}
+		if len(timeFormat) > 0 {
+			formatTime2D(formatted, timeFormat)
+		}
+		return formatted, nil
 	default:
-		return formatResponsePerQuery(request, results)
+		formatted, err := formatResponsePerQuery(request, results)
+		if err != nil {
+			return nil, err
+		}
+		if len(timeFormat) > 0 {
+			for i := range formatted {
+				formatTime2D(formatted[i], timeFormat)
+			}
+		}
+		return formatted, nil
 	}
 }
 
@@ -226,4 +241,10 @@ func findFirstElementIndex(array [][]interface{}, t time.Time, left int, right i
 		return findFirstElementIndex(array, t, left, mid-1)
 	}
 	return findFirstElementIndex(array, t, mid+1, right)
+}
+
+func formatTime2D(data [][]interface{}, timeFormat string) {
+	for i := range data {
+		data[i][0] = data[i][0].(time.Time).Format(timeFormat)
+	}
 }

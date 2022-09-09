@@ -82,16 +82,24 @@ func (element *QueriesRequestElement) Valid(format Format) bool {
 
 type QueriesRequestElementTime struct {
 	Last  *string
+	Ahead *string
 	Start *string
 	End   *string
 }
 
 func (elementTime *QueriesRequestElementTime) Valid() bool {
 	if elementTime.Last != nil {
-		if elementTime.Start != nil || elementTime.End != nil {
+		if elementTime.Start != nil || elementTime.End != nil || elementTime.Ahead != nil {
 			return false
 		}
 		if !timeIntervalValid(*elementTime.Last) {
+			return false
+		}
+	} else if elementTime.Ahead != nil {
+		if elementTime.Start != nil || elementTime.End != nil || elementTime.Last != nil {
+			return false
+		}
+		if !timeIntervalValid(*elementTime.Ahead) {
 			return false
 		}
 	} else {

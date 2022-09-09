@@ -80,6 +80,8 @@ func GenerateQueries(elements []model.QueriesRequestElement, timeDirection model
 			}
 			if element.Time.Last != nil {
 				query += " time > now() - " + *element.Time.Last
+			} else if element.Time.Ahead != nil {
+				query += " time > now() AND time < now() + " + *element.Time.Ahead
 			} else {
 				query += " time > '" + *element.Time.Start + "' AND time < '" + *element.Time.End + "'"
 			}
